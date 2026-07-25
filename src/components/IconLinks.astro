@@ -1,0 +1,84 @@
+---
+import type { IconLink } from "../lib/links";
+
+interface Props {
+  links: IconLink[];
+}
+
+const { links }: { links: IconLink[] } = Astro.props;
+---
+
+{
+  links.length > 0 && (
+    <nav class="profile-links" aria-label="Profile links">
+      {links.map((link: IconLink) => (
+        <a
+          href={link.url}
+          aria-label={link.label}
+          title={link.label}
+          target={link.isOpenTab ? "_blank" : undefined}
+          rel={link.rel}
+          class="profile-link"
+        >
+          {link.icon ? (
+            <svg
+              aria-hidden="true"
+              viewBox={link.icon.viewBox}
+              width="21"
+              height="21"
+              fill="currentColor"
+              set:html={link.icon.body}
+            />
+          ) : link.fallbackIcon === "email" ? (
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="21" height="21">
+              <path
+                d="M3 5.5h18v13H3z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linejoin="round"
+              />
+              <path
+                d="m4 7 8 6 8-6"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          ) : link.fallbackIcon === "website" ? (
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="21" height="21">
+              <circle
+                cx="12"
+                cy="12"
+                r="9"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+              />
+              <path
+                d="M3.5 12h17M12 3c2.4 2.5 3.6 5.5 3.6 9S14.4 18.5 12 21M12 3c-2.4 2.5-3.6 5.5-3.6 9S9.6 18.5 12 21"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+              />
+            </svg>
+          ) : (
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="21" height="21">
+              <path
+                d="M10 13a5 5 0 0 0 7.1.1l2-2A5 5 0 0 0 12 4l-1.1 1.1M14 11a5 5 0 0 0-7.1-.1l-2 2A5 5 0 0 0 12 20l1.1-1.1"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          )}
+        </a>
+      ))}
+    </nav>
+  )
+}

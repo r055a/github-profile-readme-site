@@ -1,0 +1,82 @@
+---
+import ProfileAvatar from "../components/ProfileAvatar.astro";
+import IconLinks from "../components/IconLinks.astro";
+import ThemeToggle from "../components/ThemeToggle.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+import { githubAvatarUrl, githubProfileUrl, siteConfig } from "../config";
+import { getIconLinks, idUrls, type IconLink } from "../lib/links";
+import { fetchAvatar } from "../lib/fav.ts";
+import { fetchReadme } from "../lib/gh.ts";
+
+const {
+  description,
+  displayName,
+  githubUsername,
+  language,
+  links,
+  tagline,
+  themeCol,
+} = siteConfig;
+
+const [readme, favUrl] = await Promise.all([
+  fetchReadme(githubUsername),
+  fetchAvatar(githubAvatarUrl),
+]);
+
+const url: URL = new URL(Astro.url.pathname, Astro.site);
+const title: string = `${displayName} — GitHub Profile`;
+const iconLinks: IconLink[] = await getIconLinks(links);
+
+const sameAs: string[] = [...new Set([githubProfileUrl, ...idUrls(iconLinks)])];
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "ProfilePage",
+  url: url.href,
+  name: title,
+  ...(description && { description }),
+
+  mainEntity: {
+    "@type": "Person",
+    name: displayName,
+    alternateName: githubUsername,
+    ...(description && { description }),
+    image: githubAvatarUrl,
+    url: url.href,
+    sameAs,
+  },
+};
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  url={url}
+  imageUrl={githubAvatarUrl}
+  imageAlt={`${displayName}'s GitHub profile photo`}
+  language={language}
+  themeCol={themeCol}
+  data={structuredData}
+  favUrl={favUrl}
+>
+  <main
+    class="content-shell relative mx-auto min-h-screen max-w-4xl px-5 py-10 sm:px-8 sm:py-16"
+  >
+    <ThemeToggle />
+
+    <ProfileAvatar
+      imageUrl={githubAvatarUrl}
+      profileUrl={githubProfileUrl}
+      displayName={displayName}
+      tagline={tagline}
+    />
+
+    <IconLinks links={iconLinks} />
+
+    <article
+      class="gh-readme prose max-w-none prose-slate dark:prose-invert"
+      set:html={readme.html}
+    />
+  </main>
+</BaseLayout>

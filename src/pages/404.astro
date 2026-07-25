@@ -1,0 +1,44 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { githubAvatarUrl, siteConfig } from "../config";
+
+const {
+  displayName,
+  language,
+  themeCol,
+}: { displayName: string; language: string; themeCol: string } = siteConfig;
+const title: string = `Page not found — ${displayName}`;
+---
+
+<BaseLayout
+  title={title}
+  description="The requested page could not be found."
+  imageUrl={githubAvatarUrl}
+  imageAlt={`${displayName}'s GitHub profile photo`}
+  language={language}
+  themeCol={themeCol}
+  noindex
+>
+  <main class="grid min-h-screen place-items-center px-6 py-16 text-center">
+    <div>
+      <p
+        class="text-sm font-semibold tracking-[0.2em] text-sky-600 uppercase dark:text-sky-400"
+      >
+        404
+      </p>
+
+      <h1
+        class="mt-3 text-3xl font-bold tracking-tight text-slate-950 dark:text-white"
+      >
+        Page not found
+      </h1>
+
+      <a
+        href={import.meta.env.BASE_URL}
+        class="mt-7 inline-flex rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 focus-visible:ring-4 focus-visible:ring-sky-500/40 focus-visible:outline-none dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+      >
+        Return home
+      </a>
+    </div>
+  </main>
+</BaseLayout>

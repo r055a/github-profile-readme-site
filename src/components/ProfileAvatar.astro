@@ -1,0 +1,33 @@
+---
+interface Props {
+  imageUrl: string;
+  profileUrl: string;
+  displayName: string;
+  tagline?: string;
+}
+
+const { imageUrl, profileUrl, displayName, tagline } = Astro.props;
+---
+
+<div class="profile-avatar-block">
+  <div
+    class="profile-avatar-header flex items-center justify-center gap-1 sm:gap-2"
+  >
+    <a
+      href={profileUrl}
+      class="group rounded-full outline-none focus-visible:ring-4 focus-visible:ring-sky-500/40"
+    >
+      <img
+        src={imageUrl}
+        alt={`${displayName}'s GitHub profile`}
+        width="160"
+        height="160"
+        loading="eager"
+        fetchpriority="high"
+        class="size-32 rounded-full border border-slate-200 bg-white object-cover shadow-xl shadow-slate-950/10 transition duration-200 group-hover:scale-[1.03] group-focus-visible:scale-[1.03] sm:size-40 dark:border-slate-700 dark:bg-slate-900"
+      />
+    </a>
+  </div>
+
+  {tagline && <p class="profile-tagline">{tagline?.trim()}</p>}
+</div>
