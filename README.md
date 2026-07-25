@@ -70,6 +70,13 @@ Each entry in the links `{key: value}` object maps a platform/icon ID (`key`) to
 }
 ```
 
+A visual of the example when deployed:
+
+![example-site-dark-mode](https://github.com/user-attachments/assets/de90f61e-1456-4cb9-a3a5-6b3c39d37a5c#gh-dark-mode-only)
+![example-site-light-mode](https://github.com/user-attachments/assets/68aea52a-7c8c-4a14-9acb-2d386f1bb8de#gh-light-mode-only)
+
+Supports dark and light mode.
+
 ## Local Development
 
 ### Install
