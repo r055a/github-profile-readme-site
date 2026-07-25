@@ -1,15 +1,11 @@
 {
-  "githubUsername": "r055a",
-  "displayName": "Adam Ross",
-  "description": "GitHub Actions deployed profile README Astro site example.",
-  "tagline": "Just a guy who likes ☕",
-  "siteUrl": "https://r055a.github.io",
-  "basePath": "/github-profile-readme-site",
-  "language": "en",
-  "themeCol": "#00DCB3",
-  "links": {
-    "buymeacoffee": "https://buymeacoffee.com/kofi.kiwi",
-    "github": "https://r055a.github.io/r055a",
-    "ko-fi": "https://ko-fi.com/kowfi_kiwi"
-  }
+  "githubUsername": "",
+  "displayName": "",
+  "description": "",
+  "tagline": "",
+  "siteUrl": "https://placeholder",
+  "basePath": "",
+  "language": "",
+  "themeCol": "",
+  "links": {}
 }
