@@ -1,4 +1,4 @@
-const GH_API_V: string = "2026-03-10";
+export const GH_API_V: string = "2026-03-10";
 
 export interface ReadmeRes {
   html: string;
