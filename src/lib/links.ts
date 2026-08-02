@@ -1,7 +1,7 @@
 import * as simpleIcons from "simple-icons";
 import type { SimpleIcon } from "simple-icons";
 
-export type FallbackIcon = "email" | "link" | "website";
+export type IconFB = "email" | "link" | "website";
 
 export interface LinkIcon {
   title: string;
@@ -14,7 +14,7 @@ export interface IconLink {
   label: string;
   url: string;
   icon?: LinkIcon;
-  fallbackIcon?: FallbackIcon;
+  fallbackIcon?: IconFB;
   rel?: string;
   isOpenTab: boolean;
 }
@@ -27,7 +27,6 @@ interface IconSrcBS {
 }
 
 const iconCacheBS = new Map<string, Promise<LinkIcon | undefined>>();
-
 const svgLoadBS = import.meta.glob(
   "/node_modules/bootstrap-icons/icons/*.svg",
   {
@@ -145,7 +144,6 @@ function loadIconBS(iconStr: string): Promise<LinkIcon | undefined> {
     .catch((): undefined => undefined);
 
   iconCacheBS.set(normIconStr, iconPromise);
-
   return iconPromise;
 }
 
@@ -181,15 +179,15 @@ function getLbl(key: string): string {
     .replace(/^./, (char: string): string => char.toUpperCase());
 }
 
-function getIconFallBack(key: string, url: string): FallbackIcon {
-  const normalizedKey: string = norm(key);
-  const normalizedUrl: string = url.toLowerCase();
-  if (normalizedUrl.startsWith("mailto:") || normalizedKey.includes("email")) {
+function getIconFallBack(key: string, url: string): IconFB {
+  const normKey: string = norm(key);
+  const normUrl: string = url.toLowerCase();
+  if (normUrl.startsWith("mailto:") || normKey.includes("email")) {
     return "email";
   } else if (
-    normalizedKey.includes("website") ||
-    normalizedKey.includes("portfolio") ||
-    normalizedKey.includes("homepage")
+    normKey.includes("website") ||
+    normKey.includes("portfolio") ||
+    normKey.includes("homepage")
   ) {
     return "website";
   }

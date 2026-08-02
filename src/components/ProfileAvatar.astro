@@ -2,11 +2,11 @@
 interface Props {
   imageUrl: string;
   profileUrl: string;
-  displayName: string;
+  tabName: string | undefined;
   tagline?: string;
 }
 
-const { imageUrl, profileUrl, displayName, tagline } = Astro.props;
+const { imageUrl, profileUrl, tabName, tagline } = Astro.props;
 ---
 
 <div class="profile-avatar-block">
@@ -19,7 +19,7 @@ const { imageUrl, profileUrl, displayName, tagline } = Astro.props;
     >
       <img
         src={imageUrl}
-        alt={`${displayName}'s GitHub profile`}
+        alt={`${tabName}'s GitHub profile`}
         width="160"
         height="160"
         loading="eager"
@@ -29,5 +29,11 @@ const { imageUrl, profileUrl, displayName, tagline } = Astro.props;
     </a>
   </div>
 
-  {tagline && <p class="profile-tagline">{tagline?.trim()}</p>}
+  {
+    tagline && (
+      <p class="profile-tagline" data-i18n-tagline>
+        {tagline?.trim()}
+      </p>
+    )
+  }
 </div>

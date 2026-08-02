@@ -1,6 +1,13 @@
 ---
 import "../style.css";
 
+interface TransClient {
+  locale: string;
+  title: string;
+  tagline: string;
+  readmeHTML: string;
+}
+
 interface Props {
   title: string;
   description?: string;
@@ -12,6 +19,8 @@ interface Props {
   data?: Record<string, unknown>;
   favUrl?: string;
   noindex?: boolean;
+  translations?: TransClient[];
+  defLanguage?: string;
 }
 
 const {
@@ -21,16 +30,22 @@ const {
   imageUrl,
   imageAlt,
   language = "en",
-  themeCol: themeColor,
+  themeCol,
   data,
   favUrl,
   noindex = false,
+  translations = [],
+  defLanguage = language,
 } = Astro.props;
 
 const baseUrl: string | undefined = url?.href;
 const jsonLd: string | undefined = data
   ? JSON.stringify(data).replace(/</g, "\\u003c")
   : undefined;
+const i18n: string | undefined =
+  translations.length > 1
+    ? JSON.stringify({ defLanguage, translations }).replace(/</g, "\\u003c")
+    : undefined;
 ---
 
 <!doctype html>
@@ -40,7 +55,174 @@ const jsonLd: string | undefined = data
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
 
-    {themeColor && <meta name="theme-color" content={themeColor} />}
+    {themeCol && <meta name="theme-color" content={themeCol} />}
+
+    <style is:inline set:html={"html.i18n-pending body { visibility: hidden; }"}
+    ></style>
+
+    {
+      i18n && (
+        <script
+          id="i18n-data"
+          type="application/json"
+          is:inline
+          set:html={i18n}
+        />
+      )
+    }
+
+    <script is:inline>
+      (() => {
+        const root = document.documentElement;
+        root.classList.add("i18n-pending");
+
+        const relPage = () => root.classList.remove("i18n-pending");
+        const relTimer = window.setTimeout(relPage, 3000);
+
+        try {
+          const payloadElement = document.getElementById("i18n-data");
+          const payload = JSON.parse(payloadElement?.textContent ?? "{}");
+          const localeNorm = (locale) =>
+            String(locale ?? "")
+              .trim()
+              .replaceAll("_", "-")
+              .toLowerCase();
+
+          const translations = Array.isArray(payload.translations)
+            ? payload.translations
+                .map((translation) => ({
+                  ...translation,
+                  localeNorm: localeNorm(translation?.locale),
+                }))
+                .filter(
+                  (translation) =>
+                    translation.localeNorm &&
+                    typeof translation.title === "string" &&
+                    typeof translation.tagline === "string" &&
+                    typeof translation.readmeHTML === "string",
+                )
+            : [];
+          if (!translations.length) {
+            window.clearTimeout(relTimer);
+            relPage();
+            return;
+          }
+
+          const localeTrans = new Map(
+            translations.map((translation) => [
+              translation.localeNorm,
+              translation,
+            ]),
+          );
+          const transFB =
+            localeTrans.get(localeNorm(payload.defLanguage)) ?? translations[0];
+
+          const transFind = () => {
+            const browserLocales =
+              Array.isArray(navigator.languages) && navigator.languages.length
+                ? navigator.languages
+                : [navigator.language];
+
+            for (const browserLoc of browserLocales) {
+              const reqLocale = localeNorm(browserLoc);
+              if (!reqLocale) continue;
+
+              const exact = localeTrans.get(reqLocale);
+              if (exact) return exact;
+
+              const localeParts = reqLocale.split("-");
+              for (let len = localeParts.length - 1; len >= 1; len -= 1) {
+                const lessSpecific = localeTrans.get(
+                  localeParts.slice(0, len).join("-"),
+                );
+                if (lessSpecific) return lessSpecific;
+              }
+
+              const isTrans = translations.find(
+                ({ localeNorm }) => localeNorm.split("-")[0] === localeParts[0],
+              );
+              if (isTrans) return isTrans;
+            }
+            return transFB;
+          };
+
+          const localeDir = (locale) =>
+            /^(?:ar|ckb|dv|fa|he|ku|ps|sd|ug|ur)(?:-|$)/i.test(locale)
+              ? "rtl"
+              : "ltr";
+
+          const applyTrans = (isForceReadme = false) => {
+            const translation = transFind();
+            if (!translation) return;
+
+            const locale = translation.locale;
+            const isLocaleToggled =
+              root.dataset.appliedLocale !== translation.localeNorm;
+            root.lang = locale;
+            root.dir = localeDir(locale);
+            root.dataset.locale = locale;
+            document.title = translation.title;
+
+            const ogTitle = document.querySelector('meta[property="og:title"]');
+            if (ogTitle) {
+              ogTitle.setAttribute("content", translation.title);
+            }
+
+            const tagline = document.querySelector("[data-i18n-tagline]");
+            if (tagline) {
+              const value = translation.tagline.trim();
+              tagline.textContent = value;
+              tagline.hidden = !value;
+            }
+
+            const readme = document.querySelector("[data-i18n-readme]");
+            if (readme && (isLocaleToggled || isForceReadme)) {
+              readme.innerHTML = translation.readmeHTML;
+            }
+
+            root.dataset.appliedLocale = translation.localeNorm;
+            if (isLocaleToggled || isForceReadme) {
+              window.dispatchEvent(
+                new CustomEvent("i18n-toggle-readme", {
+                  detail: { locale },
+                }),
+              );
+            }
+            window.clearTimeout(relTimer);
+            relPage();
+          };
+
+          const selected = transFind();
+          if (selected) {
+            root.lang = selected.locale;
+            root.dir = localeDir(selected.locale);
+            root.dataset.locale = selected.locale;
+          }
+
+          if (document.readyState === "loading") {
+            document.addEventListener(
+              "DOMContentLoaded",
+              () => applyTrans(true),
+              {
+                once: true,
+              },
+            );
+          } else {
+            applyTrans(true);
+          }
+
+          window.addEventListener("i18n-toggle", () => applyTrans(true));
+          window.addEventListener("pageshow", () => applyTrans());
+          document.addEventListener("visibilitychange", () => {
+            if (!document.hidden) applyTrans();
+          });
+        } catch (error) {
+          window.clearTimeout(relTimer);
+          relPage();
+          console.error("Failed to select browser language:", error);
+        }
+      })();
+    </script>
 
     <script is:inline>
       (() => {
@@ -78,21 +260,25 @@ const jsonLd: string | undefined = data
         </svg>
       `;
 
-      document.addEventListener(
-        "DOMContentLoaded",
-        () => {
-          for (const pre of document.querySelectorAll(".gh-readme pre")) {
-            if (pre.querySelector(".copy-code-button")) continue;
-            const button = document.createElement("button");
-            button.type = "button";
-            button.className = "copy-code-button";
-            button.ariaLabel = "Copy code to clipboard";
-            button.innerHTML = copyIcon;
-            pre.append(button);
-          }
-        },
-        { once: true },
-      );
+      const copyButton = () => {
+        for (const pre of document.querySelectorAll(".gh-readme pre")) {
+          if (pre.querySelector(".copy-code-button")) continue;
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "copy-code-button";
+          button.ariaLabel = "Copy code to clipboard";
+          button.innerHTML = copyIcon;
+          pre.append(button);
+        }
+      };
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", copyButton, {
+          once: true,
+        });
+      } else {
+        copyButton();
+      }
+      window.addEventListener("i18n-toggle-readme", copyButton);
 
       document.addEventListener("click", async (event) => {
         const button =
