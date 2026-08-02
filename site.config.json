@@ -5,7 +5,7 @@
   "description": "A static Astro site for GitHub profile README markdown content.",
   "tagline": "Just a guy who likes ☕",
   "siteUrl": "https://r055a.github.io",
-  "basePath": "/r055a",
+  "basePath": "/github-profile-readme-site",
   "language": "en",
   "locales": [
     "en",
