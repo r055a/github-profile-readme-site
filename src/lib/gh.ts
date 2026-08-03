@@ -1,6 +1,12 @@
 export const GH_API_V: string = "2026-03-10";
 
-export interface ReadmeRes {
+export interface ReadmeSrc {
+  owner: string;
+  repoName: string;
+  readmeDir: string;
+}
+
+export interface ReadmeRes extends ReadmeSrc {
   html: string;
   isSuccess: boolean;
 }
@@ -117,27 +123,6 @@ function formatSrcset(html: string, baseUrl: string): string {
   );
 }
 
-function formatUrls(html: string, username: string, defBranch: string): string {
-  const encUsername: string = encodeURIComponent(username);
-  const encBranch: string = encodeURIComponent(defBranch);
-
-  const rawUrl: string =
-    `https://raw.githubusercontent.com/` +
-    `${encUsername}/${encUsername}/` +
-    `${encBranch}/`;
-  const res: string = formatAttr(
-    formatAttr(html, "img|source|video|audio|track|input", "src", rawUrl),
-    "img|source",
-    "data-canonical-src",
-    rawUrl,
-  );
-  const blobUrl: string =
-    `https://github.com/` +
-    `${encUsername}/${encUsername}/blob/` +
-    `${encBranch}/`;
-  return formatAttr(formatSrcset(res, rawUrl), "a|area", "href", blobUrl);
-}
-
 function escHtml(str: string): string {
   return str.replace(
     /[&<>"']/g,
@@ -152,25 +137,26 @@ function escHtml(str: string): string {
   );
 }
 
-function failRes(username: string, msg: string): ReadmeRes {
+function failRes(src: ReadmeSrc, msg: string): ReadmeRes {
   console.warn(`[GitHub README] ${msg}`);
   const htmlFB: string = `
-    <h1>${escHtml(username)}</h1>
+    <h1>${escHtml(src.owner)}</h1>
     <p>The profile README could not be loaded.</p>
-    <p><a href="https://github.com/${encodeURIComponent(username)}">Open the GitHub profile</a></p>
+    <p><a href="https://github.com/${encodeURIComponent(src.owner)}/${encodeURIComponent(src.repoName)}">Open the GitHub repository</a></p>
   `;
   return {
+    ...src,
     html: htmlFB,
     isSuccess: false,
   };
 }
 
 async function fetchDefBranch(
-  username: string,
+  src: ReadmeSrc,
   headers: Record<string, string>,
 ): Promise<string> {
   try {
-    const res: Response = await fetch(repoApiUrl(username), {
+    const res: Response = await fetch(urlRepoAPI(src), {
       headers: {
         ...headers,
         Accept: "application/vnd.github+json",
@@ -184,7 +170,6 @@ async function fetchDefBranch(
       default_branch?: unknown;
     };
     const branch: unknown = repo.default_branch;
-
     return typeof branch === "string" && branch.trim() ? branch : "HEAD";
   } catch {
     return "HEAD";
@@ -204,44 +189,132 @@ function getHeaders(accept: string): Record<string, string> {
   return headers;
 }
 
-function repoApiUrl(username: string, path = ""): string {
-  const encodedUsername: string = encodeURIComponent(username);
+function urlUserAPI(username: string): string {
+  return `https://api.github.com/users/${encodeURIComponent(username)}`;
+}
+
+function urlRepoAPI(src: ReadmeSrc, path = ""): string {
   return (
     "https://api.github.com/repos/" +
-    `${encodedUsername}/${encodedUsername}${path}`
+    `${encodeURIComponent(src.owner)}/${encodeURIComponent(src.repoName)}${path}`
   );
 }
 
-export async function fetchReadme(username: string): Promise<ReadmeRes> {
+async function isOrg(
+  username: string,
+  headers: Record<string, string>,
+): Promise<boolean | undefined> {
+  try {
+    const res: Response = await fetch(urlUserAPI(username), {
+      headers: {
+        ...headers,
+        Accept: "application/vnd.github+json",
+      },
+    });
+    if (!res.ok) return undefined;
+    const account = (await res.json()) as { type?: unknown };
+    return account.type === "Organization";
+  } catch {
+    return undefined;
+  }
+}
+
+function encPath(path: string): string {
+  return path
+    .split("/")
+    .filter(Boolean)
+    .map((part: string): string => encodeURIComponent(part))
+    .join("/");
+}
+
+function fmtUrls(html: string, src: ReadmeSrc, defBranch: string): string {
+  const encOwner: string = encodeURIComponent(src.owner);
+  const encRepo: string = encodeURIComponent(src.repoName);
+  const encBranch: string = encodeURIComponent(defBranch);
+  const encDir: string = encPath(src.readmeDir);
+
+  const rawUrl: string =
+    `https://raw.githubusercontent.com/` +
+    `${encOwner}/${encRepo}/${encBranch}/${encDir ? `${encDir}/` : ""}`;
+  const res: string = formatAttr(
+    formatAttr(html, "img|source|video|audio|track|input", "src", rawUrl),
+    "img|source",
+    "data-canonical-src",
+    rawUrl,
+  );
+  const blobUrl: string =
+    `https://github.com/` +
+    `${encOwner}/${encRepo}/blob/${encBranch}/${encDir ? `${encDir}/` : ""}`;
+  return formatAttr(formatSrcset(res, rawUrl), "a|area", "href", blobUrl);
+}
+
+export async function getReadMeSrc(
+  username: string,
+  repoName: string | undefined,
+  headers: Record<string, string> = getHeaders("application/vnd.github+json"),
+): Promise<ReadmeSrc> {
+  const owner: string = username.trim();
+  const reqRepo: string = String(repoName ?? "").trim();
+
+  if (!owner) throw new Error("githubName is required.");
+  if (reqRepo.includes("/")) {
+    throw new Error(
+      "repoName must be only be the repository in owner/repository.",
+    );
+  }
+
+  const isOrgProfile: boolean | undefined =
+    !reqRepo || reqRepo === ".github" ? await isOrg(owner, headers) : false;
+  repoName = reqRepo || (isOrgProfile === true ? ".github" : owner);
+  const readmeDir: string =
+    repoName === ".github" && isOrgProfile !== false ? "profile" : "";
+  return { owner, repoName, readmeDir };
+}
+
+export async function fetchReadMe(
+  username: string,
+  repoName?: string,
+): Promise<ReadmeRes> {
   const headers: Record<string, string> = getHeaders(
     "application/vnd.github.html+json",
   );
+  let src: ReadmeSrc = {
+    owner: username.trim(),
+    repoName: String(repoName ?? "").trim() || username.trim(),
+    readmeDir: String(repoName ?? "").trim() === ".github" ? "profile" : "",
+  };
+
   try {
+    src = await getReadMeSrc(username, repoName, headers);
     const [res, defBranch] = await Promise.all([
-      fetch(repoApiUrl(username, "/readme"), {
-        headers,
-      }),
-      fetchDefBranch(username, headers),
+      fetch(
+        urlRepoAPI(
+          src,
+          src.readmeDir ? `/readme/${encPath(src.readmeDir)}` : "/readme",
+        ),
+        { headers },
+      ),
+      fetchDefBranch(src, headers),
     ]);
     if (!res.ok) {
       return failRes(
-        username,
+        src,
         `GitHub API returned ${res.status} ` +
-          `${res.statusText}. Confirm that the public ` +
-          `repository ${username}/${username} contains a README.`,
+          `${res.statusText}. Confirm that ${src.owner}/${src.repoName}/${src.readmeDir ? `${src.readmeDir}/` : ""}README.md is public.`,
       );
     }
 
-    const html: string = formatUrls(
+    const html: string = fmtUrls(
       formatTag(
         formatTag(normHeadMD(getMD(await res.text())), "h1", "readme-title"),
         "p",
         "readme-intro",
       ),
-      username,
+      src,
       defBranch,
     );
     return {
+      ...src,
       html,
       isSuccess: true,
     };
@@ -250,6 +323,6 @@ export async function fetchReadme(username: string): Promise<ReadmeRes> {
       error instanceof Error
         ? error.message
         : "An unknown network error occurred.";
-    return failRes(username, msg);
+    return failRes(src, msg);
   }
 }

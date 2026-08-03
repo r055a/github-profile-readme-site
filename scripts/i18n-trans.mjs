@@ -3,9 +3,10 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { transHTML } from "./i18n-profile.mjs";
-import { GH_API_V } from "../src/lib/gh.ts";
+import { fetchReadMe } from "../src/lib/gh.ts";
 
 const PATTERN_MODEL_TXT = /[\p{L}\p{N}]/u;
+const DEFAULT_TAB_SUFFIX = "GitHub Profile";
 
 const GEN_DIR = resolve(
   process.cwd(),
@@ -300,13 +301,13 @@ class TransHF {
     return this.pipelinePromise;
   }
 
-  optsGen(source, locale, retry = false) {
+  optsGen(src, locale, retry = false) {
     const opts = {
       do_sample: false,
       max_new_tokens: maxTokens(
-        source,
+        src,
         retry
-          ? Math.max(16, Math.ceil(Array.from(source).length * 1.75 + 8))
+          ? Math.max(16, Math.ceil(Array.from(src).length * 1.75 + 8))
           : MAX_NEW_TOKENS,
       ),
       no_repeat_ngram_size: retry ? 2 : 3,
@@ -451,194 +452,8 @@ function isLocale(locale) {
   }
 }
 
-function getRepoUrl(username, path = "") {
-  const encoded = encodeURIComponent(username);
-  return `https://api.github.com/repos/${encoded}/${encoded}${path}`;
-}
-
-async function fetchDefBranch(username, headers) {
-  try {
-    const res = await fetch(getRepoUrl(username), {
-      headers: { ...headers, Accept: "application/vnd.github+json" },
-    });
-    if (!res.ok) return "HEAD";
-    const repo = await res.json();
-    return typeof repo.default_branch === "string" && repo.default_branch.trim()
-      ? repo.default_branch
-      : "HEAD";
-  } catch {
-    return "HEAD";
-  }
-}
-
 function escHTML(html) {
   return html.replace(/[&<>"']/g, (char) => HTML_ESC[char] ?? char);
-}
-
-function invalidReadmeMsg(username, msg) {
-  console.warn(`GitHub README: ${msg}`);
-  return {
-    isSuccess: false,
-    html: `\n<h1>${escHTML(username)}</h1>\n<p>The profile README could not be loaded.</p>\n<p><a href="https://github.com/${encodeURIComponent(username)}">Open the GitHub profile</a></p>\n`,
-  };
-}
-
-function resolveRelUrl(url, baseUrl) {
-  const trimUrl = url.trim();
-  if (!trimUrl || /^(?:[a-z][a-z\d+.-]*:|\/\/|#)/i.test(trimUrl)) return url;
-  if (trimUrl.startsWith("/")) return `https://github.com${trimUrl}`;
-  try {
-    return new URL(trimUrl, baseUrl).href;
-  } catch {
-    return url;
-  }
-}
-
-function formatAttrUrl(html, tagPattern, attr, baseUrl) {
-  return html.replace(
-    new RegExp(
-      `(<(?:${tagPattern})\\b[^>]*?\\s${attr}\\s*=\\s*)(["'])(.*?)\\2`,
-      "gi",
-    ),
-    (_match, prefix, quote, url) =>
-      `${prefix}${quote}${resolveRelUrl(url, baseUrl)}${quote}`,
-  );
-}
-
-function formatSrcset(html, baseUrl) {
-  return html.replace(
-    /(<(?:img|source)\b[^>]*?\ssrcset\s*=\s*)(["'])(.*?)\2/gi,
-    (_match, prefix, quote, str) => {
-      if (str.trim().startsWith("data:"))
-        return `${prefix}${quote}${str}${quote}`;
-      const formattedStr = str
-        .split(",")
-        .map((part) => {
-          const [url = "", desc] = part.trim().split(/\s+/, 2);
-          const res = resolveRelUrl(url, baseUrl);
-          return desc ? `${res} ${desc}` : res;
-        })
-        .join(", ");
-      return `${prefix}${quote}${formattedStr}${quote}`;
-    },
-  );
-}
-
-function formatReadmeUrl(html, username, branch) {
-  const encUsername = encodeURIComponent(username);
-  const encBranch = encodeURIComponent(branch);
-  const baseRaw = `https://raw.githubusercontent.com/${encUsername}/${encUsername}/${encBranch}/`;
-  const baseBlob = `https://github.com/${encUsername}/${encUsername}/blob/${encBranch}/`;
-
-  const withSrc = formatAttrUrl(
-    formatAttrUrl(html, "img|source|video|audio|track|input", "src", baseRaw),
-    "img|source",
-    "data-src",
-    baseRaw,
-  );
-  return formatAttrUrl(
-    formatSrcset(withSrc, baseRaw),
-    "a|area",
-    "href",
-    baseBlob,
-  );
-}
-
-function stripHeader(html) {
-  return html.replace(
-    /<a\b[^>]*\bclass\s*=\s*(["'])[^"']*\banchor\b[^"']*\1[^>]*>[\s\S]*?<\/a>/gi,
-    "",
-  );
-}
-
-function headerNorm(html) {
-  return html
-    .replace(
-      /<div\b(?=[^>]*\bclass\s*=\s*(["'])[^"']*\bmarkdown-heading\b[^"']*\1)[^>]*>([\s\S]*?)<\/div>/i,
-      (wrapper) => {
-        const heading = wrapper.match(/<h1\b[^>]*>[\s\S]*?<\/h1>/i)?.[0];
-        return heading ? stripHeader(heading) : wrapper;
-      },
-    )
-    .replace(
-      /<h1\b([^>]*)>([\s\S]*?)<\/h1>/i,
-      (_match, attributes, contents) =>
-        `<h1${attributes}>${stripHeader(contents)}</h1>`,
-    )
-    .replace(
-      /(<h1\b[^>]*>[\s\S]*?<\/h1>)\s*<a\b[^>]*\bclass\s*=\s*(["'])[^"']*\banchor\b[^"']*\2[^>]*>[\s\S]*?<\/a>/i,
-      "$1",
-    );
-}
-
-function getMD(html) {
-  const md = html.trim().match(/^<article\b([^>]*)>([\s\S]*)<\/article>$/i);
-  if (!md || !/\bmarkdown-body\b/i.test(md[1] ?? "")) return html;
-  return (md[2] ?? "").trim();
-}
-
-function getHeaders(accept) {
-  const headers = {
-    Accept: accept,
-    "X-GitHub-Api-Version": GH_API_V,
-    "User-Agent": "github-profile-readme-site",
-  };
-  const token = process.env.GITHUB_TOKEN?.trim();
-  if (token) headers.Authorization = `Bearer ${token}`;
-  return headers;
-}
-
-function addCls(html, tag, clsName) {
-  return html.replace(
-    new RegExp(`<${tag}\\b([^>]*)>`, "i"),
-    (_opening, attrs) => {
-      const clsPattern = /\sclass\s*=\s*(["'])(.*?)\1/i;
-      const match = attrs.match(clsPattern);
-      if (!match) return `<${tag}${attrs} class="${clsName}">`;
-      const classes = new Set(match[2].split(/\s+/).filter(Boolean));
-      classes.add(clsName);
-      return `<${tag}${attrs.replace(
-        clsPattern,
-        ` class=${match[1]}${[...classes].join(" ")}${match[1]}`,
-      )}>`;
-    },
-  );
-}
-
-async function fetchReadme(username) {
-  const headers = getHeaders("application/vnd.github.html+json");
-  try {
-    const [res, defBranch] = await Promise.all([
-      fetch(getRepoUrl(username, "/readme"), { headers }),
-      fetchDefBranch(username, headers),
-    ]);
-
-    if (!res.ok) {
-      return invalidReadmeMsg(
-        username,
-        `GitHub-API returned ${res.status} ${res.statusText} for ${username}/${username} README.`,
-      );
-    }
-
-    const html = formatReadmeUrl(
-      addCls(
-        addCls(headerNorm(getMD(await res.text())), "h1", "readme-title"),
-        "p",
-        "readme-intro",
-      ),
-      username,
-      defBranch,
-    );
-
-    return { html, isSuccess: true };
-  } catch (error) {
-    return invalidReadmeMsg(
-      username,
-      error instanceof Error
-        ? error.message
-        : "An unknown network error occurred.",
-    );
-  }
 }
 
 function genPath(locale) {
@@ -683,14 +498,20 @@ async function main() {
   const locales = localesUniq(localeSrc, conf.locales);
   for (const locale of locales) isLocale(locale);
 
-  const username = String(conf.githubUsername ?? "").trim();
+  const username = String(conf.githubName ?? "").trim();
+  const repoName = String(conf.repoName ?? "").trim();
   const tagline = String(conf.tagline ?? "");
-  const tabSuffix = String(conf.tabSuffix ?? "GitHub Profile");
-  let readme = await fetchReadme(username);
+  const tabSuffix = String(conf.tabSuffix ?? "").trim() || DEFAULT_TAB_SUFFIX;
+  let readme = await fetchReadMe(username, repoName);
   if (!readme.isSuccess) {
     const prevSrc = await readJson(genPath(localeSrc));
-    if (prevSrc?.readme?.isSuccess === true) {
-      console.warn("Reverting to prior README.");
+    if (
+      prevSrc?.readme?.isSuccess === true &&
+      prevSrc.readme.owner === readme.owner &&
+      prevSrc.readme.repoName === readme.repoName &&
+      prevSrc.readme.readmeDir === readme.readmeDir
+    ) {
+      console.warn("Reverting to prior README from the same repo.");
       readme = prevSrc.readme;
     }
   }

@@ -1,35 +1,57 @@
 # GitHub Profile README Site
 
-Deploy your GitHub profile `README.md` as a static Astro site with profile avatar, tagline and icon links using Actions.
+Deploy your GitHub user or organization profile `README.md` as a static Astro site using Actions with:
+
+- profile avatar
+- tagline
+- icon links
+- i18n translations
+- and full support of GitHub README Markdown format
 
 ### Create Repository
 
 Create a [template](https://github.com/new?template_name=github-profile-readme-site&template_owner=r055a) copy (recommended) of this repository, or a [fork](https://github.com/r055a/github-profile-readme-site/fork) (for contributing).
 
+#### User profile
+
 If you don't have a GitHub profile `README.md`, name the repo copy the same as your username for creating one.
 
-An example can be found here for a profile: [r055a/r055a](https://github.com/r055a/r055a).
+An example can be found here for a user profile: [r055a/r055a](https://github.com/r055a/r055a).
+
+#### Organization profile
+
+If the profile is for an organization, name it `.github` and create a `profile/README.md` to make it.
+
+An example can be found here for an organization profile: [uni-git-projects/.github](https://github.com/uni-git-projects/.github).
 
 ### Configure Site
 
-To display your profile README content in the site, edit the `./site.config.json` file with at least the following:
+To display your profile README content in the site, edit the `./site.config.json` file with the following:
 
-- GitHub username: `githubUsername`
-- GitHub profile site URL: `siteUrl`
-- GitHub profile repo name: `basePath`
+- **[required]** GitHub _user_ or _organization_ name: `githubName`
+- **[required]** GitHub profile site _URL_: `siteUrl`
+- [_optional_] GitHub repo the README data is fetched from (defaults to _profile_ repo): `repoName`
+- [_optional_] GitHub repo the profile site is deployed from (defaults to `repoName`): `basePath`
+- [_optional_] A brief tagline to complement the profile Avatar (associated with `githubName`): `tagline`
+- [_optional_] The tab (user/org) identifier for the profile site (defaults to `githubName`): `tabName`
+- [_optional_] The tab title for the profile site (defaults to _"GitHub profile"_): `tabSuffix`
+- [_optional_] The site description (not displayed on the deployed site): `description`
+- [_optional_] An (RGB, HEX) theme color for the site: `themeCol`
+- [_optional_] The language the profile README Markdown is written in (defaults to _"en"_): `language`
 
 ```json
 {
-  "githubUsername": "",
+  "githubName": "",
+  "siteUrl": "",
+  "repoName": "",
+  "basePath": "",
+  "tagline": "",
   "tabName": "",
   "tabSuffix": "",
   "description": "",
-  "tagline": "",
-  "siteUrl": "",
-  "basePath": "",
+  "themeCol": "",
   "language": "",
   "locales": [],
-  "themeCol": "",
   "links": {}
 }
 ```
@@ -159,16 +181,17 @@ Each entry in the **links** `{key: value}` object maps a platform/icon ID (`key`
 
 ```json
 {
-  "githubUsername": "r055a",
+  "githubName": "r055a",
+  "siteUrl": "https://r055a.github.io",
+  "repoName": "",
+  "basePath": "",
+  "tagline": "Just a guy who likes ☕",
   "tabName": "Adam Ross",
   "tabSuffix": "GitHub Profile",
   "description": "A static Astro site for GitHub profile README markdown content.",
-  "tagline": "Just a guy who likes ☕",
-  "siteUrl": "https://r055a.github.io",
-  "basePath": "/r055a",
-  "language": "en",
-  "locales": ["en", "sv", "de", "es", "fr", "hi", "zh"],
   "themeCol": "",
+  "language": "en",
+  "locales": ["sv", "de", "es", "fr", "hi", "zh"],
   "links": {
     "buymeacoffee": "https://example.com",
     "dev.to": "https://example.com",

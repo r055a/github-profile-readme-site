@@ -1,13 +1,14 @@
 {
-  "githubUsername": "",
-  "tabName": "",
-  "tabSuffix": "GitHub Profile",
-  "description": "",
-  "tagline": "",
+  "githubName": "",
   "siteUrl": "https://example.com",
+  "repoName": "",
   "basePath": "",
+  "tagline": "",
+  "tabName": "",
+  "tabSuffix": "",
+  "description": "",
+  "themeCol": "",
   "language": "",
   "locales": [],
-  "themeCol": "",
   "links": {}
 }
