@@ -361,6 +361,15 @@ html.dark
   color: var(--code-text);
 }
 
+.gh-readme blockquote {
+  quotes: none;
+}
+
+.gh-readme blockquote p:first-of-type::before,
+.gh-readme blockquote p:last-of-type::after {
+  content: none !important;
+}
+
 .copy-code-button {
   position: absolute;
   top: 0.5rem;

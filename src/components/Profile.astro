@@ -15,7 +15,7 @@ import { getIconLinks, idUrls } from "../lib/links";
 import { fetchAvatar } from "../lib/fav";
 import { getTranslations, type ProfileTrans } from "../lib/profile";
 
-const { description, githubUsername, links, tabName, themeCol } = siteConfig;
+const { description, githubName, links, tabName, themeCol } = siteConfig;
 const [translations, favUrl, iconLinks] = await Promise.all([
   Promise.all(
     locales.map(async (locale: string) => {
@@ -61,7 +61,7 @@ const structData = {
   mainEntity: {
     "@type": "Person",
     name: tabName,
-    alternateName: githubUsername,
+    alternateName: githubName,
     ...(description && { description }),
     image: githubAvatarUrl,
     url: url.href,

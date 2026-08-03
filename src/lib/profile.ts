@@ -23,6 +23,8 @@ export interface ProfileTrans {
   title: string;
 }
 
+const DEFAULT_TAB_SUFFIX: string = "GitHub Profile";
+
 const genDir: string = resolve(
   process.cwd(),
   process.env.I18N_OUTPUT_DIR?.trim() || "src/gen/i18n",
@@ -65,7 +67,9 @@ export function getTranslations(locale: string): Promise<ProfileTrans> {
 
   const content: Promise<ProfileTrans> = readGenDoc(locale).then(
     (gen: Profile): ProfileTrans => ({
-      title: `${siteConfig.tabName} — ${gen.tabSuffix}`,
+      title:
+        `${siteConfig.tabName || siteConfig.githubName}` +
+        `— ${gen.tabSuffix || DEFAULT_TAB_SUFFIX}`,
       tagline: gen.tagline,
       readme: gen.readme,
     }),

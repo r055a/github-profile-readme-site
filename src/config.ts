@@ -1,16 +1,17 @@
 import rawConfig from "../site.config.json";
 
 export interface SiteConfig {
-  githubUsername: string;
-  tabName?: string; // Your name
-  tabSuffix?: string;
-  tagline: string;
-  description: string;
+  githubName: string;
   siteUrl: string;
+  repoName?: string;
   basePath: string;
+  tagline: string;
+  tabName?: string;
+  tabSuffix?: string;
+  description: string;
+  themeCol: string;
   language: string;
   locales?: string[];
-  themeCol: string;
   links: Record<string, string>;
 }
 
@@ -30,5 +31,5 @@ for (const locale of locales) {
   }
 }
 
-export const githubProfileUrl = `https://github.com/${siteConfig.githubUsername}`;
+export const githubProfileUrl = `https://github.com/${siteConfig.githubName}`;
 export const githubAvatarUrl = `${githubProfileUrl}.png?size=320`;
