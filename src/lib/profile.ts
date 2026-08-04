@@ -69,7 +69,7 @@ export function getTranslations(locale: string): Promise<ProfileTrans> {
     (gen: Profile): ProfileTrans => ({
       title:
         `${siteConfig.tabName || siteConfig.githubName}` +
-        `— ${gen.tabSuffix || DEFAULT_TAB_SUFFIX}`,
+        ` — ${gen.tabSuffix || DEFAULT_TAB_SUFFIX}`,
       tagline: gen.tagline,
       readme: gen.readme,
     }),
