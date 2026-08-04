@@ -8,6 +8,8 @@ Deploy your GitHub user or organization profile `README.md` as a static Astro si
 - i18n translations
 - and full support of GitHub README Markdown format
 
+An example site can be found here: [https://profile-icons.github.io/github-profile-readme-site/](https://profile-icons.github.io/github-profile-readme-site/)
+
 ### Create Repository
 
 Create a [template](https://github.com/new?template_name=github-profile-readme-site&template_owner=r055a) copy (recommended) of this repository, or a [fork](https://github.com/r055a/github-profile-readme-site/fork) (for contributing).
@@ -171,7 +173,7 @@ Profile translations are generated for **locales** prior to deployment using the
 
 </details>
 
-> Note: if changing browser languages during sessions, a browser cache refresh may be required to display translations.
+> Note: if changing browser languages during a session, a cache refresh may be required to render translations.
 
 #### Icon Links
 
@@ -214,13 +216,6 @@ Each entry in the **links** `{key: value}` object maps a platform/icon ID (`key`
   }
 }
 ```
-
-A visual of the example when deployed:
-
-![example-site-dark-mode](https://github.com/user-attachments/assets/de90f61e-1456-4cb9-a3a5-6b3c39d37a5c#gh-dark-mode-only)
-![example-site-light-mode](https://github.com/user-attachments/assets/68aea52a-7c8c-4a14-9acb-2d386f1bb8de#gh-light-mode-only)
-
-Supports dark and light mode.
 
 ## Local Development
 
