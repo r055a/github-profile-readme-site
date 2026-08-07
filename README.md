@@ -17,6 +17,8 @@ An example site can be found here: [https://profile-icons.github.io/github-profi
 <details>
 <summary>Option 1: Repository Template</summary>
 
+##### Repository Template
+
 Create a [template](https://github.com/new?template_name=github-profile-readme-site&template_owner=r055a) copy (recommended) of this repository, or a [fork](https://github.com/r055a/github-profile-readme-site/fork) (for contributing).
 
 #### User profile
@@ -34,6 +36,10 @@ An example can be found here for an organization profile: [uni-git-projects/.git
 
 <details>
 <summary>Option 2: Action Workflow</summary>
+
+##### Action Workflow
+
+Create and add the following workflow to: `.github/workflows/deploy-profile-site.yml`
 
 ```yaml
 name: deploy-profile-site
