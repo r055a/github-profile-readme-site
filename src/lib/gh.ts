@@ -1,3 +1,5 @@
+import { marked } from "marked";
+
 export const GH_API_V: string = "2026-03-10";
 
 export interface ReadmeSrc {
@@ -9,16 +11,6 @@ export interface ReadmeSrc {
 export interface ReadmeRes extends ReadmeSrc {
   html: string;
   isSuccess: boolean;
-}
-
-function getMD(html: string): string {
-  const htmlMatch: RegExpMatchArray | null = html
-    .trim()
-    .match(/^<article\b([^>]*)>([\s\S]*)<\/article>$/i);
-  if (!htmlMatch || !/\bmarkdown-body\b/i.test(htmlMatch[1] ?? "")) {
-    return html;
-  }
-  return (htmlMatch[2] ?? "").trim();
 }
 
 function stripPerms(header: string): string {
@@ -276,7 +268,7 @@ export async function fetchReadMe(
   repoName?: string,
 ): Promise<ReadmeRes> {
   const headers: Record<string, string> = getHeaders(
-    "application/vnd.github.html+json",
+    "application/vnd.github.raw+json",
   );
   let src: ReadmeSrc = {
     owner: username.trim(),
@@ -304,9 +296,15 @@ export async function fetchReadMe(
       );
     }
 
+    const md: string = await res.text();
+    const renderedMD: string = await marked.parse(md, {
+      gfm: true,
+      breaks: false,
+    });
+
     const html: string = fmtUrls(
       formatTag(
-        formatTag(normHeadMD(getMD(await res.text())), "h1", "readme-title"),
+        formatTag(normHeadMD(renderedMD), "h1", "readme-title"),
         "p",
         "readme-intro",
       ),

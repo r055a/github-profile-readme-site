@@ -30,6 +30,7 @@
     "bootstrap-icons": "^1.13.1",
     "clean": "^4.0.2",
     "emoji-regex": "^10.6.0",
+    "marked": "^18.0.9",
     "simple-icons": "^16.28.0"
   },
   "devDependencies": {
