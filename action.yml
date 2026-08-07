@@ -1,0 +1,54 @@
+name: "GitHub Profile README Site"
+description: "Build a Astro.js static profile site from README Markdown content with avatar, tagline and icon links."
+author: "profile-icons"
+
+branding:
+  icon: "user"
+  color: "blue"
+
+inputs:
+  config-path:
+    description: "Path to the `site.config.json` file"
+    required: true
+    default: "site.config.json"
+
+outputs:
+  dist-path:
+    description: "Path to the generated Astro.js site"
+    value: ${{ steps.build.outputs.dist-path }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup
+      uses: actions/setup-node@v7
+      with:
+        node-version: "24"
+
+    - name: Prepare
+      shell: bash
+      run: |
+        BUILD_DIR="$RUNNER_TEMP/github-profile-readme-site"
+        rm -rf "$BUILD_DIR"
+        mkdir -p "$BUILD_DIR"
+
+        cp -R "$GITHUB_ACTION_PATH/." "$BUILD_DIR/"
+        cp "${{ github.workspace }}/${{ inputs.config-path }}" \
+           "$BUILD_DIR/site.config.json"
+
+        echo "BUILD_DIR=$BUILD_DIR" >> "$GITHUB_ENV"
+
+    - name: Install
+      shell: bash
+      run: npm ci
+      working-directory: ${{ env.BUILD_DIR }}
+
+    - name: Build
+      id: build
+      shell: bash
+      run: |
+        npm run build
+        echo "dist-path=$BUILD_DIR/dist" >> "$GITHUB_OUTPUT"
+      working-directory: ${{ env.BUILD_DIR }}
+      env:
+        GITHUB_TOKEN: ${{ github.token }}

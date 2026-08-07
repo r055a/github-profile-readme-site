@@ -10,7 +10,12 @@ Deploy your GitHub user or organization profile `README.md` as a static Astro si
 
 An example site can be found here: [https://profile-icons.github.io/github-profile-readme-site/](https://profile-icons.github.io/github-profile-readme-site/)
 
-### Create Repository
+## Instructions
+
+### Setup
+
+<details>
+<summary>Option 1: Repository Template</summary>
 
 Create a [template](https://github.com/new?template_name=github-profile-readme-site&template_owner=r055a) copy (recommended) of this repository, or a [fork](https://github.com/r055a/github-profile-readme-site/fork) (for contributing).
 
@@ -25,10 +30,56 @@ An example can be found here for a user profile: [r055a/r055a](https://github.co
 If the profile is for an organization, name it `.github` and create a `profile/README.md` to make it.
 
 An example can be found here for an organization profile: [uni-git-projects/.github](https://github.com/uni-git-projects/.github).
+</details>
 
-### Configure Site
+<details>
+<summary>Option 2: Action Workflow</summary>
 
-To display your profile README content in the site, edit the `./site.config.json` file with the following:
+```yaml
+name: deploy-profile-site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build
+        id: profile-site
+        uses: profile-icons/github-profile-readme-site@v1
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: ${{ steps.profile-site.outputs.dist-path }}
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
+```
+</details>
+
+### Configure
+
+To display your profile README content in the site, create/edit `site.config.json`:
 
 - **[required]** GitHub _user_ or _organization_ name: `githubName`
 - **[required]** GitHub profile site _URL_: `siteUrl`
@@ -190,7 +241,7 @@ Each entry in the **links** `{key: value}` object maps a platform/icon ID (`key`
   "tagline": "Just a guy who likes ☕",
   "tabName": "Adam Ross",
   "tabSuffix": "GitHub Profile",
-  "description": "A static Astro site for GitHub profile README markdown content.",
+  "description": "A static profile site for rendering GitHub README markdown content with avatar, tagline & icon links",
   "themeCol": "",
   "language": "en",
   "locales": ["sv", "de", "es", "fr", "hi", "zh"],
